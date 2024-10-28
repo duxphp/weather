@@ -1,33 +1,27 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cast"
 	"io"
+	"io/fs"
 	"net/http"
 )
 
-var accountKey = "P3JOHAV73NJQQjRCu"
 var accountSecret = "S-ktM5BwJbNCX_CRa"
 var apiUri = "https://api.seniverse.com/v3/weather/now.json"
+
+//go:embed dist
+var distDir embed.FS
 
 func main() {
 
 	router := mux.NewRouter()
 
-	// 渲染编译后的首页
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			_, _ = w.Write([]byte("Hello, This is GET method. [Go]"))
-		case http.MethodPost:
-			_, _ = w.Write([]byte("Hello, This is POST method. [Go]"))
-		}
-	})
-
-	// 天气查询api
+	// 天气查询路由
 	router.HandleFunc("/api/weather/{city}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		city := vars["city"]
@@ -35,6 +29,7 @@ func main() {
 		if err != nil {
 			return
 		}
+
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
@@ -57,6 +52,7 @@ func main() {
 			return
 		}
 
+		// 处理异常
 		if data["results"] == nil {
 			RespJson(w, &RespData{
 				Status:  500,
@@ -66,6 +62,7 @@ func main() {
 			return
 		}
 
+		// 返回结果
 		RespJson(w, &RespData{
 			Status:  200,
 			Message: "请求成功",
@@ -74,16 +71,26 @@ func main() {
 
 	})
 
+	// 静态文件路由
+	dist, err := fs.Sub(distDir, "dist")
+	if err != nil {
+		panic(err)
+	}
+	dir := http.FileServer(http.FS(dist))
+	router.PathPrefix("/").Handler(dir)
+
 	fmt.Println("Server is running at http://0.0.0.0:8800")
 	_ = http.ListenAndServe(":8800", router)
 }
 
+// RespData 返回结构
 type RespData struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 	Data    any    `json:"data"`
 }
 
+// RespJson 返回json封装
 func RespJson(w http.ResponseWriter, resp *RespData) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
