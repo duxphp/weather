@@ -1,7 +1,8 @@
 # 天气查询作品
 
 ## 说明
-使用 go + 原生 http 构建后端，接口采用[新知天气](https://www.seniverse.com/)，前端采用 ts + vite + react + unocss 构建。
+使用 go + 原生 http 构建后端，接口采用[新知天气](https://www.seniverse.com/)，前端采用 ts + vite + react + unocss 构建，前端自适应移动端。
+
 
 ## 项目结构
 ```
